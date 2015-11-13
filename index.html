@@ -1,0 +1,628 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <meta name="author" content="ka" />
+  <meta name="date" content="2015-11-14" />
+  <title>ConoHa VPSの操作をするCLIツールを作ってみた</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" type="text/css" media="screen, projection, print"
+    href="http://www.w3.org/Talks/Tools/Slidy2/styles/slidy.css" />
+  <script src="http://www.w3.org/Talks/Tools/Slidy2/scripts/slidy.js"
+    charset="utf-8" type="text/javascript"></script>
+</head>
+<body>
+<div class="slide titlepage">
+  <h1 class="title">ConoHa VPSの操作をするCLIツールを作ってみた</h1>
+  <p class="author">
+ka
+  </p>
+  <p class="date">2015-11-14</p>
+</div>
+<div id="author" class="slide section level1">
+<h1>Author</h1>
+<p>ka</p>
+<p><a href="https://gravatar.com/ka000"><img src="https://gravatar.com/avatar/884be098693425b409d25aaec5091de8?s=150" alt="Gravatar" /></a></p>
+<p>Website: <a href="http://www.kaosfield.net">kaosfield</a></p>
+<p>Twitter: <a href="https://twitter.com/ka_">ka_</a></p>
+<p>GitHub: <a href="https://github.com/kaosf">kaosf</a></p>
+</div>
+<div id="はじめに" class="slide section level1">
+<h1>はじめに</h1>
+<p>このスライドは公開されています</p>
+<p>このスライドのリポジトリは<a href="https://github.com/kaosf/20151114-osc-tokushimarb" class="uri">https://github.com/kaosf/20151114-osc-tokushimarb</a>にあります</p>
+<p>間違いなどを見つけた場合は</p>
+<ul>
+<li>
+メールで連絡
+</li>
+<li>
+Issueで報告
+</li>
+<li>
+Pull Requestで修正案を提出
+</li>
+</ul>
+<p>などしていただけるとありがたいです (※下に行くほど嬉しいです)</p>
+</div>
+<div id="license" class="slide section level1">
+<h1>License</h1>
+<p>CC BY-NC-SA 4.0</p>
+<p><a href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img src="https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png" alt="CC BY-NC-SA 4.0" /></a></p>
+<p>Copyright (C) 2015 ka</p>
+</div>
+<div id="余談" class="slide section level1">
+<h1>余談</h1>
+<p>最近 NC を除いてもいいんじゃないかって気もしてる</p>
+<p>これは BY-NC-SA で</p>
+</div>
+<div id="おしながき" class="slide section level1">
+<h1>おしながき</h1>
+<p>一つのことを上手くやれなくても一つのことだけに集中しようという話</p>
+<p>Ruby製のCLIツールを作る方法</p>
+<p>net/httpライブラリをちゃんと自分の手で使ってみたという話</p>
+<p>OpenStackのAPIを普通に扱う方法を諦めた話</p>
+<p>ユーザが自分しか居なくても頑張れる話</p>
+<p>などなど</p>
+</div>
+<div id="対象者" class="slide section level1">
+<h1>対象者</h1>
+<p>VPSの操作をWebブラウザ上でやるの面倒くさいと思っている人</p>
+<p>ConoHa VPSを料金抑えて使いたいと思っている人</p>
+<p>CUIの世界に閉じこもりたい人</p>
+<p>Rubyの話が何か聞きたい人</p>
+</div>
+<div id="想定するレベル" class="slide section level1">
+<h1>想定するレベル</h1>
+<p>レンタルサーバなりVPSなりを使ったことがある人</p>
+<p>Rubyの文法とかgemの使い方とか入門レベルは流石に終わっている人</p>
+<p>ターミナルでの操作を説明されたり見せられたりしても「さっきから一体何をやってるんだ？」とはならない程度の人</p>
+</div>
+<div id="conoha-vpsを軽く紹介" class="slide section level1">
+<h1>ConoHa VPSを軽く紹介</h1>
+<p>AWSの天下布武に始まり</p>
+<p>さくら GMO Kagoya その他諸々</p>
+<p>の色んな業者がクラウドやVPSのサービスをやっている</p>
+<p>そんな中でGMOがやってるConoHa VPSというのが2015年の5月だか6月だか(うろ覚え)の頃に<br />
+リニューアルをやって安いわ性能は良いわで私が今現在大変気に入っている</p>
+<p><a href="https://www.conoha.jp/en">ConoHa - Low-cost! Easy to use! Boot up in only 40sec.</a></p>
+</div>
+<div id="section" class="slide section level1">
+<h1></h1>
+<p>気に入っているのは以下の点</p>
+<ul>
+<li>
+初期費用不要
+</li>
+<li>
+1時間単位で課金(1.3円ずつ)
+</li>
+<li>
+1ヶ月900円
+</li>
+<li>
+操作用のAPIが公開されている
+</li>
+</ul>
+</div>
+<div id="私の今までの利用形態" class="slide section level1">
+<h1>私の今までの利用形態</h1>
+<p>ノートPC(なるべくバッテリー長持ちするやつ)を常用する</p>
+<p>開発はSSH越しに別マシン(VPSかデスクトップマシンであることが多い)で行う</p>
+<h2 id="その場合の料金">その場合の料金</h2>
+<p>さくらのVPSを使っていた</p>
+<p>VPSの利用料金は最低でおおよそ月額1,000円程度なので開発に利用する環境の料金が年間10,000円ちょい必要</p>
+<p>一番低いスペックで年間10,000円はかかるので次のスペックを開発用に使おうと思ったら<br />
+4年くらいでもっと良いノートPC買えたよね？みたいになりそう</p>
+</div>
+<div id="conohaに変わって" class="slide section level1">
+<h1>ConoHaに変わって</h1>
+<p>VPSのコントロールパネル(VPSを作って壊してする画面)がWebブラウザで操作出来るものとして提供される<br />
+(これは別にどこもそれほど変わらない)</p>
+<p>しかしAPIが提供された</p>
+<p>時間単位で課金されるなら作っては壊し作っては壊しを出来れば利用料金を1/3くらいに抑えられる？</p>
+<p>ならばコマンドラインで作って壊して出来るようにしてしまえ</p>
+<p>これが一番最初の動機</p>
+</div>
+<div id="一つのことだけに集中しよう" class="slide section level1">
+<h1>一つのことだけに集中しよう</h1>
+<p>UNIX哲学にこういうのがある</p>
+<blockquote>
+<p>一つのことを、うまくやれ</p>
+</blockquote>
+<p><a href="https://ja.wikipedia.org/wiki/UNIX%E5%93%B2%E5%AD%A6">UNIX哲学 - Wikipedia</a></p>
+</div>
+<div id="section-1" class="slide section level1">
+<h1></h1>
+<p>例えば今回作ってみたツールでは</p>
+<p><strong>シェルスクリプトを実行するのが面倒なのを簡単にしたい</strong></p>
+<p>これに集中した</p>
+</div>
+<div id="section-2" class="slide section level1">
+<h1></h1>
+<p>最初はConoHa APIをサンプルに則りcurlしまくるシェルスクリプト群を使ってた</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ot">AUTH_TOKEN=</span><span class="kw">`head</span> -1 authtoken<span class="kw">`</span>
+<span class="ot">TENANT_ID=</span>xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+<span class="ot">ROOT_PASS=</span>xxxxxxxxxx
+<span class="ot">ADMIN_PASS=$ROOT_PASS</span>
+<span class="kw">if [</span> <span class="ot">$#</span> <span class="ot">-lt</span> 1<span class="kw"> ]</span>; <span class="kw">then</span>
+  <span class="ot">IMAGE_REF=</span>fa67ec7b-b9b4-4633-9012-fc5a6303aba7 <span class="co"># CentOS 6.6</span>
+<span class="kw">elif [</span> <span class="ot">$1</span> <span class="ot">=</span> ubuntu<span class="kw"> ]</span>; <span class="kw">then</span>
+  <span class="ot">IMAGE_REF=</span>2b03327f-d453-4c7d-91c9-8b9924b6ea88 <span class="co"># Ubuntu 14.04 amd64</span>
+<span class="kw">elif [</span> <span class="ot">$1</span> <span class="ot">=</span> centos7<span class="kw"> ]</span>; <span class="kw">then</span>
+  <span class="ot">IMAGE_REF=</span>edc9457e-e4a8-4974-8217-c254d215b460 <span class="co"># CentOS 7.1</span>
+<span class="kw">fi</span>
+
+<span class="ot">FLAVOR_REF=</span>7eea7469-0d85-4f82-8050-6ae742394681 <span class="co"># RAM 1GB</span>
+<span class="kw">curl</span> -X POST \
+  -H <span class="st">&quot;Accept: application/json&quot;</span> \
+  -H <span class="st">&quot;X-Auth-Token: </span><span class="ot">$AUTH_TOKEN</span><span class="st">&quot;</span> \
+  -d <span class="st">&#39;{&quot;server&quot;: {&quot;adminPass&quot;: &quot;&#39;</span><span class="ot">$ADMIN_PASS</span><span class="st">&#39;&quot;,&quot;imageRef&quot;: &quot;&#39;</span><span class="ot">$IMAGE_REF</span><span class="st">&#39;&quot;, ... }}&#39;</span> \
+  https://compute.tyo1.conoha.io/v2/<span class="ot">$TENANT_ID</span>/servers <span class="kw">2&gt;</span> /dev/null <span class="kw">|</span> <span class="kw">\</span>
+  <span class="kw">ruby</span> -rjson -e <span class="st">&#39;puts JSON.parse(STDIN.read)[&quot;server&quot;][&quot;id&quot;]&#39;</span></code></pre></div>
+<p>これを <code>1-create-vps.sh</code> として用意してた</p>
+</div>
+<div id="section-3" class="slide section level1">
+<h1></h1>
+<p>認証用のtokenは <code>authtoken</code> というファイルの一行目に書いて<br />
+以下のシェルスクリプトで書き換えるようにしてた</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">curl</span> -X POST -H <span class="st">&quot;Accept: application/json&quot;</span> \
+  -d <span class="st">&#39;{&quot;auth&quot;:{&quot;passwordCredentials&quot;:{&quot;username&quot;:&quot;xxxx&quot;,&quot;password&quot;: &quot;xxxxxx&quot;},&quot;tenantId&quot;:&quot;xxxxxxxxxxx&quot;}}&#39;</span> \
+  https://identity.tyo1.conoha.io/v2.0/tokens <span class="kw">2&gt;</span> /dev/null <span class="kw">|</span> <span class="kw">\</span>
+  <span class="kw">ruby</span> -rjson -e <span class="st">&#39;t=JSON.parse(STDIN.read)[&quot;access&quot;][&quot;token&quot;][&quot;id&quot;];puts t;File.open(&quot;authtoken&quot;,&quot;w&quot;).puts t&#39;</span></code></pre></div>
+<p>JSONのパースは面倒くさいのでRubyのワンライナーで済ませていた</p>
+<p>これを <code>0-authenticate.sh</code> として用意してた</p>
+</div>
+<div id="余談-1" class="slide section level1">
+<h1>余談</h1>
+<p>ただ世の中にはBashでJSONのパースも済ませてしまう人も居るらしい</p>
+<p><a href="https://github.com/dominictarr/JSON.sh">dominictarr/JSON.sh</a></p>
+</div>
+<div id="section-4" class="slide section level1">
+<h1></h1>
+<p>で，以上のようなシェルスクリプト(Rubyの力をJSONパースに利用させてもらう)群を<br />
+他にもたくさん作っていて，ひとまず</p>
+<ol>
+<li>
+認証する(トークンを得て保存する)
+</li>
+<li>
+VPSを作る
+</li>
+<li>
+IPアドレスを取得する
+</li>
+<li>
+SSH接続を開始する
+</li>
+<li>
+VPSをシャットダウンする
+</li>
+<li>
+VPSをイメージとして保存する
+</li>
+<li>
+VPSを消す(利用料節約のため)
+</li>
+<li>
+VPSを保存したイメージから再構築する
+</li>
+</ol>
+<p>が出来るようになった</p>
+</div>
+<div id="余談-2" class="slide section level1">
+<h1>余談</h1>
+<p>JSONをパースするツールとしては jq という有名ドコロがある</p>
+<p><a href="https://stedolan.github.io/jq/">jq</a></p>
+<p>しかしこれをインストールするよりもRubyを普段使いする自分にとっては</p>
+<pre><code>ruby -rjson -e &#39;puts JSON.parse(STDIN.read)[&quot;key&quot;][1]&#39;</code></pre>
+<p>の方が楽かな？と思った</p>
+<p>Rubyのワンライナーで <code>STDIN.read</code> や <code>puts</code> は省略出来るとか<br />
+何かそういうのがあったような気もしたので知ってたら教えて下さい</p>
+</div>
+<div id="余談-3" class="slide section level1">
+<h1>余談</h1>
+<p>最近はあんまり見かけませんが</p>
+<p>「それ○○で出来るよ？」</p>
+<p>というマサカリに対しては意外と</p>
+<p>「自分はこっちの方が楽だったので」</p>
+<p>で普通に対応出来ることがある</p>
+<p>※もちろんきちんと比較した上でないとダメ</p>
+</div>
+<div id="ほぼフルスクラッチhttp" class="slide section level1">
+<h1>ほぼフルスクラッチHTTP</h1>
+<p>net/httpライブラリをちゃんと自分の手で使ってみたという話</p>
+</div>
+<div id="section-5" class="slide section level1">
+<h1></h1>
+<p>シェルスクリプトでcurl叩きまくりプログラムでもとりあえず自分のやりたいことは出来た</p>
+<p>しかし一度何かが出来るようになるとすぐに不満が出てくる</p>
+<ul>
+<li>
+コマンド1つでインストールしたい
+</li>
+<li>
+コマンドをもっと短くしたい
+</li>
+<li>
+Rubyに依存したくない
+</li>
+<li>
+BashだけでJSONパースが面倒そうなら逆にRubyだけで完結したい
+</li>
+</ul>
+</div>
+<div id="そうだgem作ろう" class="slide section level1">
+<h1>そうだgem作ろう</h1>
+<p>Bashで <code>JSON.parse(STDIN.read)</code> の代わりは難しいが<br />
+Rubyでcurlコマンドの代わりは出来そう</p>
+<p>gemにしてしまえばコマンド一発でインストール出来る</p>
+<p>認証は設定ファイルをホームディレクトリに置いてそれを勝手に書き換えてくれれば扱いやすい</p>
+</div>
+<div id="section-6" class="slide section level1">
+<h1></h1>
+<p>ということで自分でcurlの代わりをすることになる</p>
+<p>幸いRubyには(他の言語でもこの辺はまずサポートされていると思うが)標準で<br />
+HTTPの各種リクエスト，レスポンスを扱うライブラリが用意されている</p>
+</div>
+<div id="section-7" class="slide section level1">
+<h1></h1>
+<p>便利メソッドがちょくちょくある(curlコマンド並の手軽さを実現？)</p>
+<p><a href="http://docs.ruby-lang.org/ja/2.2.0/library/net=2fhttp.html">library net/http (Ruby 2.2.0)</a></p>
+<p>しかしリクエストヘッダを <code>application/json</code> にしたかったり<br />
+https 通信にしたかったりするので出来るだけ細かく動かしたい</p>
+</div>
+<div id="まずuri" class="slide section level1">
+<h1>まずURI</h1>
+<div class="sourceCode"><pre class="sourceCode ruby"><code class="sourceCode ruby">require <span class="st">&#39;uri&#39;</span>
+
+uri = <span class="dt">URI</span>.parse <span class="st">&#39;https://hostname/a/b/c&#39;</span>
+uri.class <span class="co">#=&gt; URI::HTTPS</span>
+uri.host <span class="co">#=&gt; &quot;hostname&quot;</span>
+uri.port <span class="co">#=&gt; 443</span>
+uri.request_uri <span class="co">#=&gt; &quot;/a/b/c&quot;</span>
+
+uri = <span class="dt">URI</span>.parse <span class="st">&#39;http://myhost.com/some/where.html&#39;</span>
+uri.class <span class="co">#=&gt; URI::HTTP</span>
+uri.host <span class="co">#=&gt; &quot;myhost.com&quot;</span>
+uri.port <span class="co">#=&gt; 80</span>
+uri.request_uri <span class="co">#=&gt; &quot;/some/where.html&quot;</span></code></pre></div>
+<p>多分これが一番簡単で細かいと思います</p>
+</div>
+<div id="httpリクエスト" class="slide section level1">
+<h1>HTTPリクエスト</h1>
+<p>GETリクエストの場合</p>
+<div class="sourceCode"><pre class="sourceCode ruby"><code class="sourceCode ruby">require <span class="st">&#39;net/https&#39;</span>
+
+https = <span class="dt">Net</span>::<span class="dt">HTTP</span>.new(uri.host, uri.port)
+https.use_ssl = <span class="dv">true</span>
+req = <span class="dt">Net</span>::<span class="dt">HTTP</span>::<span class="dt">Get</span>.new(uri.path)
+req[<span class="st">&#39;Content-Type&#39;</span>] = <span class="st">&#39;application/json&#39;</span>
+req[<span class="st">&#39;Accept&#39;</span>] = <span class="st">&#39;application/json&#39;</span>
+req[<span class="st">&#39;X-Auth-Token&#39;</span>] = <span class="st">&quot;0123456789abcdef0123456789abcdef&quot;</span></code></pre></div>
+<p><code>https.use_ssl = true</code> これでhttps通信出来る</p>
+<p>各種リクエストヘッダの設定はHashを更新するかのように出来る</p>
+</div>
+<div id="httpリクエスト-1" class="slide section level1">
+<h1>HTTPリクエスト</h1>
+<p>POSTリクエストの場合</p>
+<div class="sourceCode"><pre class="sourceCode ruby"><code class="sourceCode ruby">require <span class="st">&#39;net/https&#39;</span>
+require <span class="st">&#39;json&#39;</span>
+
+https = <span class="dt">Net</span>::<span class="dt">HTTP</span>.new(uri.host, uri.port)
+https.use_ssl = <span class="dv">true</span>
+req = <span class="dt">Net</span>::<span class="dt">HTTP</span>::<span class="dt">Post</span>.new(uri.request_uri)
+req[<span class="st">&#39;Content-Type&#39;</span>] = <span class="st">&#39;application/json&#39;</span>
+req[<span class="st">&#39;Accept&#39;</span>] = <span class="st">&#39;application/json&#39;</span>
+req[<span class="st">&#39;X-Auth-Token&#39;</span>] = <span class="st">&quot;0123456789abcdef0123456789abcdef&quot;</span>
+req.body = payload.to_json</code></pre></div>
+<p><code>Net::HTTP::Get</code> クラスの代わりに <code>Net::HTTP::Post</code> クラスのインスタンスを作る</p>
+<p><code>payload</code>にリクエスト用のJSONの元になるHashを設定する</p>
+</div>
+<div id="payload例" class="slide section level1">
+<h1>payload例</h1>
+<div class="sourceCode"><pre class="sourceCode ruby"><code class="sourceCode ruby">payload = {
+  <span class="st">server: </span>{
+    <span class="st">adminPass: &quot;very-secure-root-password&quot;</span>,
+    <span class="st">imageRef: &quot;01234567-89ab-cdef-0123-456789abcdef&quot;</span>,
+    <span class="st">flavorRef: &quot;01234567-89ab-cdef-0123-456789abcdef&quot;</span>,
+    <span class="st">key_name: &quot;registered-public-key-name&quot;</span>,
+    <span class="st">security_groups: </span>[
+      {<span class="st">name: &#39;default&#39;</span>},
+      {<span class="st">name: &#39;gncs-ipv4-all&#39;</span>}
+    ]
+  }
+}</code></pre></div>
+</div>
+<div id="curlの場合" class="slide section level1">
+<h1>curlの場合</h1>
+<p>数ページ前に出てきたcurlの例は以下の通り</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">curl</span> -X POST \
+  -H <span class="st">&quot;Accept: application/json&quot;</span> \
+  -H <span class="st">&quot;X-Auth-Token: </span><span class="ot">$AUTH_TOKEN</span><span class="st">&quot;</span> \
+  -d <span class="st">&#39;{&quot;server&quot;: {&quot;adminPass&quot;: &quot;&#39;</span><span class="ot">$ADMIN_PASS</span><span class="st">&#39;&quot;,&quot;imageRef&quot;: &quot;&#39;</span><span class="ot">$IMAGE_REF</span><span class="st">&#39;&quot;, ... }}&#39;</span> \
+  https://compute.tyo1.conoha.io/v2/<span class="ot">$TENANT_ID</span>/servers <span class="kw">2&gt;</span> /dev/null <span class="kw">|</span> <span class="kw">\</span>
+  <span class="kw">ruby</span> -rjson -e <span class="st">&#39;puts JSON.parse(STDIN.read)[&quot;server&quot;][&quot;id&quot;]&#39;</span></code></pre></div>
+<p>長くなりすぎるので ... で省略しているが</p>
+<pre><code>  -d &#39;{&quot;server&quot;: {&quot;adminPass&quot;: &quot;&#39;$ADMIN_PASS&#39;&quot;,&quot;imageRef&quot;: &quot;&#39;$IMAGE_REF&#39;&quot;, ... }}&#39;</code></pre>
+<p>ここでJSONを文字列として渡していた</p>
+</div>
+<div id="httpリクエスト-2" class="slide section level1">
+<h1>HTTPリクエスト</h1>
+<p>DELETEリクエストの場合</p>
+<p><code>Net::HTTP::Get</code> の代わりに <code>Net::HTTP::Delete</code> を用いる</p>
+<p>後はGETリクエストのときと変わらない</p>
+</div>
+<div id="httpレスポンス" class="slide section level1">
+<h1>HTTPレスポンス</h1>
+<p>作っておいた <code>Net::HTTP::Get</code> などのインスタンスを</p>
+<div class="sourceCode"><pre class="sourceCode ruby"><code class="sourceCode ruby">res = https.request(req)</code></pre></div>
+<p>のようにこれまたあらかじめ作っておいた <code>Net::HTTP</code> のインスタンスの <code>request</code> メソッドに渡してやる</p>
+<p>そうして受け取れる <code>res</code> が <code>Net::HTTPResponse</code> のインスタンスとなり</p>
+<div class="sourceCode"><pre class="sourceCode ruby"><code class="sourceCode ruby">res.code <span class="co">#=&gt; 200, 401 など</span>
+res.body <span class="co"># レスポンスの本体(今回はJSONの文字列が入ってくる)</span></code></pre></div>
+<p>のように扱える</p>
+</div>
+<div id="section-8" class="slide section level1">
+<h1></h1>
+<ul>
+<li>
+https通信出来る
+</li>
+<li>
+GET/POST/DELETEのHTTPリクエストが出せる
+</li>
+<li>
+リクエストヘッダにapplication/jsonを指定出来る
+</li>
+<li>
+レスポンスを文字列で受け取れる
+</li>
+</ul>
+<p>これが出来るようになったのでひとまず今回のcurlコマンドの代わりとしては上等である</p>
+</div>
+<div id="ruby製のcliツールを作る方法" class="slide section level1">
+<h1>Ruby製のCLIツールを作る方法</h1>
+<p>まずgemの作り方は分かっているものとする</p>
+<p>分かってなくても3行で解説出来る</p>
+<ol class="incremental" style="list-style-type: decimal">
+<li>Rubygems.org に登録する</li>
+<li><p>Bundlerをインストールして以下を実行</p>
+<pre><code>bundle gem your_library_name</code></pre></li>
+<li><p>コードを書いてコミットして以下を実行</p>
+<pre><code>rake release</code></pre></li>
+</ol>
+</div>
+<div id="cliツールを作るには" class="slide section level1">
+<h1>CLIツールを作るには？</h1>
+<p>普通に <code>bundle gem foobar</code> を実行してgemを作ってもコマンドは作れない</p>
+<p><code>exe</code>というディレクトリを作ってそこに実行可能スクリプトを用意する</p>
+</div>
+<div id="昔は違った" class="slide section level1">
+<h1>昔は違った</h1>
+<p>ここでややこしいのが昔はデフォルトが <code>exe</code> ディレクトリではなく<br />
+<code>bin</code> ディレクトリだったこと</p>
+<p>ある時期から変わった</p>
+<p>とは言っても <code>*.gemspec</code> ファイルにその指定はあるのでそこを好きに書き換えれば良い</p>
+<h3 id="該当箇所">該当箇所</h3>
+<div class="sourceCode"><pre class="sourceCode ruby"><code class="sourceCode ruby">spec.executables = spec.files.grep(<span class="ot">%r{^exe/}</span>) { |f| <span class="dt">File</span>.basename(f) }</code></pre></div>
+</div>
+<div id="そうなってないかもしれない" class="slide section level1">
+<h1>そうなってないかもしれない</h1>
+<p>もしあなたが今の自分の環境で同様のことを行っても<br />
+先に述べた状態になっていないかもしれない</p>
+<p>その場合は Bundler 自体のバージョンが古いかもしれない</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">gem</span> uninstall bundler
+<span class="kw">gem</span> install bundler</code></pre></div>
+<p>古い Bundler は消してしまって新しいものを積極的に取り入れよう</p>
+<p>私は現在 1.10.6 を使用中</p>
+</div>
+<div id="諦めも肝心" class="slide section level1">
+<h1>諦めも肝心</h1>
+<p>OpenStackのAPIを普通に扱う方法を諦めた話</p>
+</div>
+<div id="事前調査" class="slide section level1">
+<h1>事前調査</h1>
+<p>ConoHa VPSはOpenStackの技術を採用している</p>
+<p>OpenStackは有名なのでそれを操作するRubyのgemくらい普通にあってもいいだろうと思う</p>
+<p>調べると以下のものを見つける</p>
+<p><a href="https://github.com/ruby-openstack/ruby-openstack">ruby-openstack/ruby-openstack</a></p>
+</div>
+<div id="が" class="slide section level1">
+<h1>が</h1>
+<p>READMEを読んで「自分がやりたいだけのことからかけ離れてる気がする」</p>
+<p>そして何よりも「ボリュームがパない」</p>
+<p>READMEが462行，28kBもある</p>
+</div>
+<div id="感想" class="slide section level1">
+<h1>感想</h1>
+<p>READMEを読んでも自分がやりたいだけのことを知るのに時間かかりそう</p>
+<p>ConoHaのAPIドキュメントのcurlのサンプルを試しまくって<br />
+それで積んでしまった実績があるのでそれを再利用出来るだけにする方が楽そう</p>
+<p>なので不採用</p>
+</div>
+<div id="事前調査2" class="slide section level1">
+<h1>事前調査2</h1>
+<p>そもそもConoHaのVPSを操作するgemが自分が作らなくてもあるのではないか</p>
+<p>以下のものを見つける</p>
+<p><a href="https://github.com/hironobu-s/vagrant-conoha/">hironobu-s/vagrant-conoha</a></p>
+</div>
+<div id="が-1" class="slide section level1">
+<h1>が</h1>
+<p>これはOpenStackを操作するVagrant用のProviderからのforkであると分かる</p>
+<p>Vagrant(というかVMwareないしVirtualBox)を使うのが<br />
+無理な人も居るからConoHa VPSを採用しているんだぞという節がある</p>
+</div>
+<div id="section-9" class="slide section level1">
+<h1></h1>
+<p>実際に自分がやりたかったのは</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">vagrant</span> up
+<span class="kw">vagrant</span> ssh</code></pre></div>
+<p>の代わりとしての</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">conoha</span> create
+<span class="kw">conoha</span> ssh</code></pre></div>
+<p>的な操作である</p>
+</div>
+<div id="結論" class="slide section level1">
+<h1>結論</h1>
+<p>なのでやっぱり作ってしまおうと思った</p>
+<p>あと <code>conoha</code> ってだけの名前の gem がまだなかったので儲けモンだとも思った(名前は早い者勝ち)</p>
+</div>
+<div id="ユーザが自分しか居なくても頑張れる話" class="slide section level1">
+<h1>ユーザが自分しか居なくても頑張れる話</h1>
+</div>
+<div id="githubに草が生えるから頑張れる" class="slide section level1">
+<h1>GitHubに草が生えるから頑張れる</h1>
+<p>ありがちなモチベーション</p>
+<p><a href="https://github.com/kaosf">kaosf (ka)</a></p>
+</div>
+<div id="こうやってこの場で発表出来る" class="slide section level1">
+<h1>こうやってこの場で発表出来る</h1>
+<p>これは素直に面白い</p>
+<p>自分が作ったものをネタに話出来るのは楽しい</p>
+<p>tokushima.rbでもまた話したい</p>
+</div>
+<div id="完成が無い" class="slide section level1">
+<h1>完成が無い</h1>
+<p>よく言われることだが「どこまで作っても完成は無い」</p>
+<p>やりたいことが次から次に出てくる</p>
+<p>しかしその度にconoha gemを肥大化させてはUNIX哲学に反するのでレイヤーをきちんと分けていく</p>
+<p>そういう工夫も楽しい</p>
+</div>
+<div id="ぶっちゃけ" class="slide section level1">
+<h1>ぶっちゃけ</h1>
+<p>単にものづくりは楽しいということ</p>
+<p>個人の趣味レベルのプロダクトでソースコードを隠すメリットはそんなに無いと思う</p>
+<p>(※今Vectorとか窓の杜とかクローズドソースで作者も連絡不能なプロダクトが大量にあるだけみたいな場になってません？)</p>
+<p>OSSは「別に自分は損するわけじゃないし」ってだけの動機で出来る</p>
+<p>(※ただし著作権や特許の侵害に対しては気を付けるように)</p>
+<p>ひとときひとときの活動記録であるコミットの集合体のリポジトリを世界に公開してしまう</p>
+<p>こんな素晴らしい日記としてツールがあるだろうか？</p>
+</div>
+<div id="今後の展望" class="slide section level1">
+<h1>今後の展望</h1>
+<p>HTTPの実行を司る部分，CLIツールとしての機能，<br />
+をそれぞれ<br />
+<code>conoha_api_client</code>, <code>conoha</code><br />
+に分割したい</p>
+<p>というのも複数のアカウントを切り替えなければならないことがあるので</p>
+<p>CLIツールで</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">conoha</span> userselect ka
+<span class="kw">conoha</span> userselect other</code></pre></div>
+<p>のように切り替えが出来てその後の操作が全てそのユーザで行えるようにしたい</p>
+<p>現状HTTPリクエスト出す部分とCLIツールとしての部分は最初から分離しようと思って<br />
+分離してあるが認証関連の部分がどっぷり前者に入っている</p>
+</div>
+<div id="今後の展望-1" class="slide section level1">
+<h1>今後の展望</h1>
+<p>ConoHaのAPI用のアクセストークンは有効期限が1日だけなので24時間以上開くと</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">conoha</span> authenticate</code></pre></div>
+<p>しなければならない</p>
+<p>操作の度にアクセストークンを取得するか？</p>
+<p>操作の度に401が帰ってきたらアクセストークン再取得を行うようにするか？</p>
+<p>どちらかをやりたい</p>
+</div>
+<div id="今後の展望-2" class="slide section level1">
+<h1>今後の展望</h1>
+<p>現状</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">conoha</span> ssh UUID</code></pre></div>
+<p>するのがマニュアルの通りなのだが実用的にしんどいので</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">conoha</span> ssh 0</code></pre></div>
+<p>とすれば 0 番目のVPSに対して操作が行えるようにしてある(READMEには書いてない)</p>
+<p>というのも複数のVPSが存在する際に順番が保証されるのかどうか分からないので</p>
+</div>
+<div id="今後の展望-3" class="slide section level1">
+<h1>今後の展望</h1>
+<p>なので <code>Conohafile</code> (まるで <code>Vagrantfile</code> のように) を用意して</p>
+<p>それが存在するディレクトリで</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">conoha</span> ssh</code></pre></div>
+<p>すればVPSが勝手に選ばれるようにするとかやってみたい</p>
+<p>が現状2つのVPSを頻繁に操作することも無い(一回ログインしたらそのままになる)し</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">conoha</span> ssh 0</code></pre></div>
+<p>で困ってないので可能性は薄い</p>
+</div>
+<div id="最後に" class="slide section level1">
+<h1>最後に</h1>
+<p>ちなみに作ったものは以下になります</p>
+<p><a href="https://rubygems.org/gems/conoha">conoha | RubyGems.org | your community gem host</a></p>
+<p><a href="https://github.com/kaosf/conoha">kaosf/conoha</a></p>
+</div>
+<div id="section-10" class="slide section level1">
+<h1></h1>
+<p>もし良かったらGitHubでStar下さい</p>
+<p>もし良かったら</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">gem</span> install conoha</code></pre></div>
+<p>して下さい</p>
+<p>(※ConoHa VPSはVPSを消しておけば維持費かかりませんよ)</p>
+</div>
+<div id="section-11" class="slide section level1">
+<h1></h1>
+<p>おわり</p>
+</div>
+</body>
+</html>
+<!-- Pandoc version:
+pandoc 1.15.1.1
+Compiled with texmath 0.8.4, highlighting-kate 0.6.
+Syntax highlighting is supported for the following languages:
+    abc, actionscript, ada, agda, apache, asn1, asp, awk, bash, bibtex, boo, c,
+    changelog, clojure, cmake, coffee, coldfusion, commonlisp, cpp, cs, css,
+    curry, d, diff, djangotemplate, dockerfile, dot, doxygen, doxygenlua, dtd,
+    eiffel, email, erlang, fasm, fortran, fsharp, gcc, glsl, gnuassembler, go,
+    haskell, haxe, html, idris, ini, isocpp, java, javadoc, javascript, json,
+    jsp, julia, kotlin, latex, lex, lilypond, literatecurry, literatehaskell,
+    lua, m4, makefile, mandoc, markdown, mathematica, matlab, maxima, mediawiki,
+    metafont, mips, modelines, modula2, modula3, monobasic, nasm, noweb,
+    objectivec, objectivecpp, ocaml, octave, opencl, pascal, perl, php, pike,
+    postscript, prolog, pure, python, r, relaxng, relaxngcompact, rest, rhtml,
+    roff, ruby, rust, scala, scheme, sci, sed, sgml, sql, sqlmysql,
+    sqlpostgresql, tcl, tcsh, texinfo, verilog, vhdl, xml, xorg, xslt, xul,
+    yacc, yaml, zsh
+Default user data directory: <DELETED>
+Copyright (C) 2006-2015 John MacFarlane
+Web:  http://pandoc.org
+This is free software; see the source for copying conditions.
+There is no warranty, not even for merchantability or fitness
+for a particular purpose.
+-->
